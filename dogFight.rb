@@ -2,19 +2,21 @@ require './Golfer'
 require './DogfightSpreadSheetReader'
 require './SQLGenerator'
 require './Menu'
+require './InstallDatabase'
 
-spreadSheet = DogfightSpreadSheetReader.new('./DogFight.xlsx')
+#Were setting up the initial database. Will reuse, do not remove
+# spreadSheet = DogfightSpreadSheetReader.new('./DogFight.xlsx')
+#
+# sqler = SQLGenerator.new()
+#
+# golferHash = sqler.golferHash
+#
+# menu = Menu.new
+#puts menu.printMenu
 
-sqler = SQLGenerator.new()
-
-golferHash = sqler.golferHash
-
-
-
-menu = Menu.new
-
-puts menu.printMenu
-
+puts "Setting up database"
+initDB = InstallDatabase.new
+initDB.install
 
 
 
@@ -103,6 +105,3 @@ puts menu.printMenu
 # end
 
 #lets get the hash of golfers from the db
-
-
-
