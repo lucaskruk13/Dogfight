@@ -2,6 +2,7 @@ require './Golfer'
 require './SQLGenerator'
 require './InstallDatabase'
 require 'terminal-table'
+require 'date'
 
 class Menu
 
@@ -22,11 +23,12 @@ class Menu
     topline = "**************************** DOGFIGHT CONTROL PANEL ****************************\n"
     line1 = "(1) Display Golfers and Quota"
     line2 = "(2) Add A New Golfer to the Database"
-    line3 = "(3) Add a Golfer to This Week's Dog Fight"
-    line4 = "(4) Add Current Results for Group"
-    line5 = "(5) Manual Adjustment of individual Quota"
-    line6 = "(6) Install Initial Database"
-    line7 = "(7) Exit the dogfight\n"
+    line3 = "(3) Add A Dogfight to the Schedule"
+    line4 = "(4) Add a Golfer to This Week's Dog Fight"
+    line5 = "(5) Add Current Results for Group"
+    line6 = "(6) Manual Adjustment of individual Quota"
+    line7 = "(7) Install Initial Database"
+    line8 = "(8) Exit the dogfight\n"
 
 
     @fullMenu.push(topline)
@@ -37,6 +39,7 @@ class Menu
     @fullMenu.push(line5)
     @fullMenu.push(line6)
     @fullMenu.push(line7)
+    @fullMenu.push(line8)
 
 
     return @fullMenu.join("\n")
@@ -65,18 +68,20 @@ class Menu
           #since we added a golfer, we need to update the list
           reloadGolfers
         when 3
+          addDogfight
+        when 4
           printGolferList
           addGolferToThisWeeksLineup
-        when 4
-          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
         when 5
-          puts ("Manual Adjustment of a quota -- Not Implemented\n\n")
+          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
         when 6
-          installDB
+          puts ("Manual Adjustment of a quota -- Not Implemented\n\n")
         when 7
+          installDB
+        when 8
           continue = false
         else
-          puts ("Please enter a number between 1 and 5\n\n")
+          puts ("Please enter a number between 1 and #{@fullMenu.count - 1}\n\n") # -1 for the topline
 
       end
     end
@@ -85,6 +90,57 @@ class Menu
 
   private
 
+    def getDate
+      puts "Enter a Date (YYYY/MM/DD)"
+
+      #TODO impement the date formatter. Currently throwing an error
+      date = gets.chomp.strftime("%d/%m/%Y")
+
+      return date
+
+    end
+
+    def addDogfight
+      courseHash = {}
+      rows = [] # for the terminal-table
+      sql = "SELECT * FROM COURSE;"
+      results = @sqler.retrieve(sql)
+
+      results.each_hash do |row|
+        rows << [row["ID"], row["NAME"]]
+        courseHash[row["ID"].to_i] = row["NAME"]
+      end
+
+      puts "#{Terminal::Table.new :headings => ['ID', 'COURSE'], :rows => rows}\n"
+
+      puts "Enter a course ID"
+      course = gets.chomp.to_i
+
+      if (1..3).include? course
+        puts "You Selected Course #{courseHash[course]}"
+
+        #TODO implment the get date properly
+        puts getDate
+      else
+
+        puts "Invalid Selection"
+      end
+
+
+      # rows = []
+      #
+      # @golfers.each do |golfer|
+      #   rows << [golfer.databaseID, golfer.name, golfer.currentQuota]
+      # end
+      #
+      # puts Terminal::Table.new :headings => ['ID', 'Golfer', 'Quota'], :rows => rows
+      # puts
+
+
+    end
+
+#TODO: Finish Implementing
+#TODO add exit command
     def addGolferToThisWeeksLineup
 
       puts "Add a golfer (By ID) to this week's lineup"
