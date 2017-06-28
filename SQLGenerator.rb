@@ -3,15 +3,17 @@ require 'mysql'
 
 class SQLGenerator
 
-  attr_reader :golferHash
+
+  attr_reader :golfers
 
   def initialize(arrayOfGolfers=[])
     @golfers = arrayOfGolfers
-    @golferHash = {}
-    retrieveGolfersFromDatabase
+    retrieveGolfersFromDatabase #does exactly what it says
+
 
     #sort the array by last name
-    @golferHash = golferHash.sort_by {|key, golfer| golfer.lastname}
+    #@golferHash = golferHash.sort_by {|key, golfer| golfer.lastname}
+
 
     #setup the connection
     #my = Mysql.new(hostname, username, password, databasename)
@@ -74,6 +76,7 @@ class SQLGenerator
 
       end
 
+
   private
 
     def retrieveGolfersFromDatabase
@@ -84,9 +87,9 @@ class SQLGenerator
         request = @con.query("SELECT * FROM GOLFER")
 
         request.each_hash do |row|
-          thisGolfer = Golfer.new(row["FIRST_NAME"], row["LAST_NAME"], row["CURRENT_QUOTA"], row["ID"])
+          thisGolfer = Golfer.new(row["FIRST_NAME"], row["LAST_NAME"], row["CURRENT_QUOTA"], row["ID"].to_i)
 
-          @golferHash[row["FIRST_NAME"] + " " + row["LAST_NAME"]] = thisGolfer
+          @golfers.push thisGolfer
         end
 
       rescue Mysql::Error => e
@@ -97,10 +100,11 @@ class SQLGenerator
         @con.close if @con
       end
 
-      @golferHash.each do |key, golfer|
+      @golfers.each do |golfer|
 
         golfer.previousResults = getGolfersPreviousResults(golfer)
       end
+
 
   end
 

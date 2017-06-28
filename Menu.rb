@@ -1,5 +1,7 @@
 require './Golfer'
 require './SQLGenerator'
+require './InstallDatabase'
+require 'terminal-table'
 
 class Menu
 
@@ -9,7 +11,8 @@ class Menu
     @fullMenu = Array.new
 
     @sqler = SQLGenerator.new
-    @golfers = @sqler.golferHash
+    @golfers = @sqler.golfers
+
   end
 
 
@@ -18,10 +21,12 @@ class Menu
   def fullMenu
     topline = "**************************** DOGFIGHT CONTROL PANEL ****************************\n"
     line1 = "(1) Display Golfers and Quota"
-    line2 = "(2) Add Golfer"
-    line3 = "(3) Add Current Results for Group"
-    line4 = "(4) Manual Adjustment of individual Quota"
-    line5 = "(5) Exit the dogfight\n"
+    line2 = "(2) Add A New Golfer to the Database"
+    line3 = "(3) Add a Golfer to This Week's Dog Fight"
+    line4 = "(4) Add Current Results for Group"
+    line5 = "(5) Manual Adjustment of individual Quota"
+    line6 = "(6) Install Initial Database"
+    line7 = "(7) Exit the dogfight\n"
 
 
     @fullMenu.push(topline)
@@ -30,6 +35,8 @@ class Menu
     @fullMenu.push(line3)
     @fullMenu.push(line4)
     @fullMenu.push(line5)
+    @fullMenu.push(line6)
+    @fullMenu.push(line7)
 
 
     return @fullMenu.join("\n")
@@ -49,7 +56,8 @@ class Menu
 
       case action
         when 1
-          lookUpGolfers
+          printGolferList
+          puts "Press Any Key To Continue"
           gets()
         when 2
           addGolfer
@@ -57,10 +65,15 @@ class Menu
           #since we added a golfer, we need to update the list
           reloadGolfers
         when 3
-          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
+          printGolferList
+          addGolferToThisWeeksLineup
         when 4
-          puts ("Manual Adjustment of a quota -- Not Implemented\n\n")
+          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
         when 5
+          puts ("Manual Adjustment of a quota -- Not Implemented\n\n")
+        when 6
+          installDB
+        when 7
           continue = false
         else
           puts ("Please enter a number between 1 and 5\n\n")
@@ -72,19 +85,45 @@ class Menu
 
   private
 
+    def addGolferToThisWeeksLineup
 
-    def lookUpGolfers
+      puts "Add a golfer (By ID) to this week's lineup"
+      puts "Enter 'exit' to cancel\n\n"
 
-      @golfers.each do |name, golfer|
-        puts "Database ID: #{golfer.databaseID}"
-        puts "Name: #{golfer.name}"
-        puts "Current Quota: #{golfer.getCurrentQuota}"
-        puts "\n"
-      end
+      ###### Need to implement DOGIFHT_COURSE creation menu element
+      ###### Need to choose which dogfight we are adding to
 
-      puts "Press any Key to continue"
+      dogfightDate= gets.chomp
+
+      golferID = gets.chomp.to_i
+
+      thisGolfer = @golfers.find {|g| g.databaseID == golferID}
+
+      sqler.insert("INSERT INTO CURRENT_GOLFER_LINEUP (ID")
     end
 
+    def printGolferList
+
+      rows = []
+
+      @golfers.each do |golfer|
+        rows << [golfer.databaseID, golfer.name, golfer.currentQuota]
+      end
+
+      puts Terminal::Table.new :headings => ['ID', 'Golfer', 'Quota'], :rows => rows
+      puts
+    end
+
+    def addGolferToLineup
+
+    end
+
+    def installDB
+      puts "Setting up database"
+      initDB = InstallDatabase.new
+      initDB.install
+
+    end
 
 
     # Need to Implement Next
@@ -168,7 +207,7 @@ class Menu
   private
     def reloadGolfers
       @sqler = SQLGenerator.new
-      @golfers = @sqler.golferHash
+      @golfers = @sqler.golfers
     end
 
 

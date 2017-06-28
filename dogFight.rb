@@ -5,18 +5,13 @@ require './Menu'
 require './InstallDatabase'
 
 #Were setting up the initial database. Will reuse, do not remove
-# spreadSheet = DogfightSpreadSheetReader.new('./DogFight.xlsx')
-#
-# sqler = SQLGenerator.new()
-#
-# golferHash = sqler.golferHash
-#
-# menu = Menu.new
-#puts menu.printMenu
+spreadSheet = DogfightSpreadSheetReader.new('./DogFight.xlsx')
 
-puts "Setting up database"
-initDB = InstallDatabase.new
-initDB.install
+sqler = SQLGenerator.new()
+
+menu = Menu.new
+puts menu.printMenu
+
 
 
 
