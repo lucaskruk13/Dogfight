@@ -24,11 +24,12 @@ class Menu
     line1 = "(1) Display Golfers and Quota"
     line2 = "(2) Add A New Golfer to the Database"
     line3 = "(3) Add A Dogfight to the Schedule"
-    line4 = "(4) Add a Golfer to This Week's Dog Fight"
-    line5 = "(5) Add Current Results for Group"
-    line6 = "(6) Manual Adjustment of individual Quota"
-    line7 = "(7) Install Initial Database"
-    line8 = "(8) Exit the dogfight\n"
+    line4 = "(4) Add a Golfer to This Week's Dogfight"
+    line5 = "(5) Delete a Golfer from this Weeks Dogfight"
+    line6 = "(6) Display the dogfight"
+    line7 = "(7) Add Current Results for Group"
+    line8 = "(8) Install Initial Database"
+    line9 = "(9) Exit the dogfight\n"
 
 
     @fullMenu.push(topline)
@@ -40,7 +41,7 @@ class Menu
     @fullMenu.push(line6)
     @fullMenu.push(line7)
     @fullMenu.push(line8)
-
+    @fullMenu.push(line9)
 
     return @fullMenu.join("\n")
   end
@@ -73,12 +74,16 @@ class Menu
           printGolferList
           addGolferToThisWeeksLineup
         when 5
-          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
+          deleteFromThisWeeksLineup
         when 6
-          puts ("Manual Adjustment of a quota -- Not Implemented\n\n")
+          displayCurrentDogfightList
+          puts "Press Any Key To Continue"
+          gets
         when 7
-          installDB
+          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
         when 8
+          installDB
+        when 9
           continue = false
         else
           puts ("Please enter a number between 1 and #{@fullMenu.count - 1}\n\n") # -1 for the topline
@@ -90,17 +95,57 @@ class Menu
 
   private
 
-    def getDate
-      puts "Enter a Date (YYYY/MM/DD)"
+    def displayCurrentDogfightList
 
-      #TODO impement the date formatter. Currently throwing an error
-      date = gets.chomp.strftime("%d/%m/%Y")
+      rows = [] #for the table
+      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, COURSE.NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID LEFT JOIN COURSE ON A.COURSE = COURSE.ID GROUP BY A.ID, A.COURSE;"
+
+      results.each do |row|
+        rows << row #add the row to the table master array. It takes an array of arrays
+      end
+
+      dogfightDateHash = getCurrentDogfightDate #This should be a Hash of the Dogfight
+      courseHash = getCourseByID(dogfightDateHash["COURSE"])
+
+      puts "The Current Dogfight is Scheduled for #{dogfightDateHash['DATE']} on #{courseHash['NAME']}\nIf this is incorrect, please add the new dogfight to the list\n\n"
+
+      puts "#{Terminal::Table.new :title => "Dogfight for #{dogfightDateHash['DATE']} on #{courseHash['NAME']} at 8:06 am", :headings => ['ID', 'FIRST NAME', 'LAST NAME', 'COURSE', 'QUOTA'], :rows => rows}\n\n"
+
+    end
+
+
+    def deleteFromThisWeeksLineup
+
+      displayCurrentDogfightList
+      puts 'Enter an ID To Delete'
+      deleteID = gets.chomp.to_i
+
+      puts 'Are Your Sure? (y/n)'
+      answer = gets.chomp
+
+      if answer.downcase == 'y'
+        @sqler.insert("DELETE FROM CURRENT_GOLFER_LINEUP WHERE ID = #{deleteID};")
+      else
+          puts "Canceling"
+      end
+
+    end
+
+    def getDate
+      puts "Enter a Date (YYYY-MM-DD)"
+
+
+      date = gets.chomp
+      date = Date.parse date
 
       return date
 
     end
 
     def addDogfight
+
+
+
       courseHash = {}
       rows = [] # for the terminal-table
       sql = "SELECT * FROM COURSE;"
@@ -117,45 +162,71 @@ class Menu
       course = gets.chomp.to_i
 
       if (1..3).include? course
-        puts "You Selected Course #{courseHash[course]}"
+        puts "You Selected Course #{courseHash[course]}\n"
 
-        #TODO implment the get date properly
-        puts getDate
+        addDogfightQuery = "INSERT INTO DOGFIGHT_DATE (COURSE, DATE) VALUES (#{course}, '#{getDate}');"
+
+        @sqler.insert addDogfightQuery
+
+        puts "Dogfight Added"
       else
 
         puts "Invalid Selection"
       end
 
+    end
 
-      # rows = []
-      #
-      # @golfers.each do |golfer|
-      #   rows << [golfer.databaseID, golfer.name, golfer.currentQuota]
-      # end
-      #
-      # puts Terminal::Table.new :headings => ['ID', 'Golfer', 'Quota'], :rows => rows
-      # puts
+    def getCurrentDogfightDate
 
+      #General Get of the latest dogfight row, return the hash, which there will be only one
+      dogfightSql = "SELECT MAX(ID), COURSE, DATE FROM DOGFIGHT_DATE GROUP BY ID"
+
+      result = @sqler.retrieve(dogfightSql)
+
+      result.each_hash do |row| # returning a hash
+        return row
+      end
+    end
+
+    def getCourseByID(id)
+      courseSQL = "SELECT ID, NAME FROM COURSE WHERE ID = #{id.to_i};"
+      result = @sqler.retrieve courseSQL
+
+      result.each_hash do |row|
+        return row
+      end
 
     end
 
-#TODO: Finish Implementing
-#TODO add exit command
+
+
     def addGolferToThisWeeksLineup
 
+      dogfightDateHash = getCurrentDogfightDate #This should be a Hash of the Dogfight
+      courseHash = getCourseByID(dogfightDateHash["COURSE"])
+
+      displayCurrentDogfightList
+
       puts "Add a golfer (By ID) to this week's lineup"
-      puts "Enter 'exit' to cancel\n\n"
-
-      ###### Need to implement DOGIFHT_COURSE creation menu element
-      ###### Need to choose which dogfight we are adding to
-
-      dogfightDate= gets.chomp
+      puts "Enter '-1' to cancel\n\n"
 
       golferID = gets.chomp.to_i
 
-      thisGolfer = @golfers.find {|g| g.databaseID == golferID}
+      if @golfers.any? {|golfer| golfer.databaseID == golferID}
 
-      sqler.insert("INSERT INTO CURRENT_GOLFER_LINEUP (ID")
+        @sqler.insert("INSERT INTO CURRENT_GOLFER_LINEUP VALUES (#{golferID}, #{courseHash['ID']}, '#{dogfightDateHash['DATE']}');")
+        puts "Added"
+
+        puts "Add another? (y/n)"
+        answer = gets.chomp.downcase
+
+        if answer == 'y'
+          addGolferToThisWeeksLineup # Yay, recursive call!!
+        end
+
+      else
+        puts "Invalid Selection"
+      end
     end
 
     def printGolferList
@@ -181,8 +252,6 @@ class Menu
 
     end
 
-
-    # Need to Implement Next
 
     def addGolfer
 
