@@ -3,6 +3,7 @@ require './SQLGenerator'
 require './InstallDatabase'
 require 'terminal-table'
 require 'date'
+require 'active_support/inflector'
 
 class Menu
 
@@ -47,6 +48,8 @@ class Menu
   end
 
 
+
+
   def printMenu
     # let's design a menu
     continue = true
@@ -76,11 +79,12 @@ class Menu
         when 5
           deleteFromThisWeeksLineup
         when 6
-          displayCurrentDogfightList
+          prizeMoney displayCurrentDogfightList
+
           puts "Press Any Key To Continue"
           gets
         when 7
-          puts ("Input the results from Saturday's dogfight -- Not Implemented\n\n")
+          scoreInput
         when 8
           installDB
         when 9
@@ -95,12 +99,97 @@ class Menu
 
   private
 
+    #TODO TEST THIS METHOD THIS WEEKEND AFTER SCORES ARE GAINED!
+    def scoreInput
+
+      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID" #retrieve the results from the db
+
+      #we'll iterate through the results and try to stay in the loop.
+      results.each_hash do |row|
+
+
+        puts "Enter #{row["LAST_NAME"]}, #{row["FIRST_NAME"]}\'s result for this week\'s Dogfight.\n-Please enter 0 to skip this Golfer. After Score is entered, this Golfer WILL BE REMOVED from this week's dogfight.\n-If an adjustment is needed to the score, SQL will be needed on the GOLFER_SCORE table"
+        quota = gets.chomp.to_i
+
+        if quota > 0
+          insertSQL = "INSERT INTO GOLFER_SCORE (ID, SCORE) VALUES (#{row["ID"]}, #{quota});"
+          deleteSQL = "DELETE FROM CURRENT_GOLFER_LINEUP WHERE ID = #{row["ID"]};"
+
+          puts "#{insertSQL}\n#{deleteSQL}\n\n"
+        else
+          puts "Skipped"
+        end
+      end
+
+    end
+
+    def prizeMoney(numOfGolfers=0)
+
+      prizeMoneyHash = {}
+      prizeMoneyHash[6] = {1 => 50, 2 => 30}
+      prizeMoneyHash[7] = {1 => 50, 2 => 30, 3 => 15}
+      prizeMoneyHash[8] = {1 => 55, 2 => 35, 3 => 20}
+      prizeMoneyHash[9] = {1 => 60, 2 => 40, 3 => 25}
+      prizeMoneyHash[10] = {1 => 60, 2 => 40, 3 => 25, 4 => 15}
+      prizeMoneyHash[11] = {1 => 60, 2 => 45, 3 => 30, 4 => 20}
+      prizeMoneyHash[12] = {1 => 65, 2 => 45, 3 => 35, 4 => 25}
+      prizeMoneyHash[13] = {1 => 65, 2 => 45, 3 => 35, 4 => 25, 5 => 15}
+      prizeMoneyHash[14] = {1 => 70, 2 => 50, 3 => 35, 4 => 25, 5 => 20}
+      prizeMoneyHash[15] = {1 => 70, 2 => 55, 3 => 40, 4 => 30, 5 => 20}
+      prizeMoneyHash[16] = {1 => 75, 2 => 55, 3 => 45, 4 => 35, 5 => 20}
+      prizeMoneyHash[17] = {1 => 80, 2 => 60, 3 => 50, 4 => 35, 5 => 20}
+      prizeMoneyHash[18] = {1 => 80, 2 => 60, 3 => 55, 4 => 40, 5 => 25}
+      prizeMoneyHash[19] = {1 => 80, 2 => 60, 3 => 55, 4 => 40, 5 => 25, 6 => 15}
+      prizeMoneyHash[20] = {1 => 85, 2 => 65, 3 => 55, 4 => 40, 5 => 25, 6 => 20}
+      prizeMoneyHash[21] = {1 => 90, 2 => 70, 3 => 55, 4 => 40, 5 => 30, 6 => 20}
+      prizeMoneyHash[22] = {1 => 90, 2 => 70, 3 => 55, 4 => 40, 5 => 30, 6 => 20, 7 => 15}
+      prizeMoneyHash[23] = {1 => 95, 2 => 75, 3 => 60, 4 => 40, 5 => 30, 6 => 20, 7 => 15}
+      prizeMoneyHash[24] = {1 => 95, 2 => 75, 3 => 60, 4 => 40, 5 => 30, 6 => 20, 7 => 20, 8 => 10}
+
+
+      puts "\nNumber of Golfers: #{numOfGolfers}\n\n"
+
+      if numOfGolfers < 6 || numOfGolfers > 24
+        puts "Invalid Number of Golfers. Dogfight is setup for between 6 - 24 golfers"
+      else
+
+        sum = 0 # So we can sum the total pot
+        thisDogFight = prizeMoneyHash[numOfGolfers] # get the correct prize money hash
+
+        puts "PAYOUTS: "
+        thisDogFight.each do |key, value|
+          sum += value
+          puts "#{key}#{ordinal(key)} place: $#{value}"
+        end
+
+        puts "Stableford Pot: $#{sum}\n\n"
+
+
+      end
+
+    end
+
+    def ordinal(number)
+      abs_number = number.to_i.abs
+
+      if (11..13).include?(abs_number % 100)
+        "th"
+      else
+        case abs_number % 10
+          when 1; "st"
+          when 2; "nd"
+          when 3; "rd"
+          else    "th"
+        end
+      end
+    end
+
     def displayCurrentDogfightList
 
       rows = [] #for the table
-      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, COURSE.NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID LEFT JOIN COURSE ON A.COURSE = COURSE.ID GROUP BY A.ID, A.COURSE;"
-
+      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID ORDER BY GOLFER.LAST_NAME;"
       results.each do |row|
+
         rows << row #add the row to the table master array. It takes an array of arrays
       end
 
@@ -109,8 +198,10 @@ class Menu
 
       puts "The Current Dogfight is Scheduled for #{dogfightDateHash['DATE']} on #{courseHash['NAME']}\nIf this is incorrect, please add the new dogfight to the list\n\n"
 
-      puts "#{Terminal::Table.new :title => "Dogfight for #{dogfightDateHash['DATE']} on #{courseHash['NAME']} at 8:06 am", :headings => ['ID', 'FIRST NAME', 'LAST NAME', 'COURSE', 'QUOTA'], :rows => rows}\n\n"
+      puts "#{Terminal::Table.new :title => "Dogfight for #{dogfightDateHash['DATE']} on #{courseHash['NAME']}", :headings => ['ID', 'LAST NAME', 'FIRST NAME', 'QUOTA'], :rows => rows}\n"
 
+      #return the count, we dont have to use it, but it is needed for the prize money
+      return rows.count
     end
 
 
