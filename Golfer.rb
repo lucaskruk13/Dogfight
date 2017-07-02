@@ -35,17 +35,6 @@ class Golfer
   end
 
 
-  def getCurrentQuota
-    latestTen = previousResults[-10..-1]
-
-    sum = 0
-
-    latestTen.each do |value|
-      sum += value.to_i
-    end
-
-    return (sum/10)
-  end
 
   private
 

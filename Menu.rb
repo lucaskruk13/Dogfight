@@ -99,10 +99,10 @@ class Menu
 
   private
 
-    #TODO TEST THIS METHOD THIS WEEKEND AFTER SCORES ARE GAINED!
+    #WORKING
     def scoreInput
 
-      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID" #retrieve the results from the db
+      results = @sqler.retrieve "SELECT A.ID, GOLFER.LAST_NAME, GOLFER.FIRST_NAME, GOLFER.CURRENT_QUOTA FROM CURRENT_GOLFER_LINEUP A LEFT JOIN GOLFER ON A.ID = GOLFER.ID ORDER BY GOLFER.LAST_NAME;" #retrieve the results from the db
 
       #we'll iterate through the results and try to stay in the loop.
       results.each_hash do |row|
@@ -115,7 +115,10 @@ class Menu
           insertSQL = "INSERT INTO GOLFER_SCORE (ID, SCORE) VALUES (#{row["ID"]}, #{quota});"
           deleteSQL = "DELETE FROM CURRENT_GOLFER_LINEUP WHERE ID = #{row["ID"]};"
 
-          puts "#{insertSQL}\n#{deleteSQL}\n\n"
+          @sqler.insert insertSQL
+          @sqler.insert deleteSQL
+
+          updateQuotaForGolferById row["ID"]
         else
           puts "Skipped"
         end
@@ -270,7 +273,7 @@ class Menu
     def getCurrentDogfightDate
 
       #General Get of the latest dogfight row, return the hash, which there will be only one
-      dogfightSql = "SELECT MAX(ID), COURSE, DATE FROM DOGFIGHT_DATE GROUP BY ID"
+      dogfightSql = "SELECT ID, COURSE, DATE FROM DOGFIGHT_DATE ORDER BY DATE DESC;"
 
       result = @sqler.retrieve(dogfightSql)
 
@@ -426,5 +429,34 @@ class Menu
       @golfers = @sqler.golfers
     end
 
+    def updateQuotaForGolferById(id)
+
+      retrieveSQL = "SELECT * FROM GOLFER_SCORE WHERE ID=#{id} ORDER BY CREATED_AT DESC;" #Select them all
+      results = @sqler.retrieve retrieveSQL
+
+      count = 0
+      scores = []
+
+      results.each_hash do |row|
+
+        if count < 10
+          scores.push row["SCORE"].to_i
+        end
+
+        count +=1
+      end
+
+      #averageThem
+      sum = 0
+      scores.each do |score|
+        sum += score
+      end
+
+      sum = (sum/10.0).round
+
+      #update the golfer table
+      updateSQL = "UPDATE GOLFER SET CURRENT_QUOTA = #{sum} WHERE ID = #{id};"
+      @sqler.insert updateSQL
+    end
 
 end

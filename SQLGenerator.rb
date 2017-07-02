@@ -25,7 +25,7 @@ class SQLGenerator
 
   def getGolfersPreviousResults(golfer)
 
-    queryString = "SELECT * FROM GOLFER_SCORE WHERE ID=#{golfer.databaseID};"
+    queryString = "SELECT * FROM GOLFER_SCORE WHERE ID=#{golfer.databaseID} ORDER BY CREATED_AT DESC;"
     previousScore = retrieve(queryString)
 
     scores = []
@@ -84,7 +84,7 @@ class SQLGenerator
       begin
         @con = Mysql.new('localhost', 'dogfight', 'Copperbu$13', 'DOGFIGHT')
 
-        request = @con.query("SELECT * FROM GOLFER")
+        request = @con.query("SELECT * FROM GOLFER ORDER BY LAST_NAME")
 
         request.each_hash do |row|
           thisGolfer = Golfer.new(row["FIRST_NAME"], row["LAST_NAME"], row["CURRENT_QUOTA"], row["ID"].to_i)
