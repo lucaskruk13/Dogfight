@@ -29,7 +29,7 @@ class InstallDatabase
 
   def query(sql)
     begin
-      @con = Mysql.new('localhost', 'dogfight', 'Copperbu$13', 'DOGFIGHT')
+      @con = Mysql.new('localhost', 'dogfight', '****', 'DOGFIGHT')
 
       request = @con.query(sql)
 
