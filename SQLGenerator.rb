@@ -60,7 +60,7 @@ class SQLGenerator
 
       def insert(sql)
         begin
-          @con = Mysql.new('localhost', 'dogfight', 'Copperbu$13', 'DOGFIGHT')
+          @con = Mysql.new('localhost', 'dogfight', '****', 'DOGFIGHT')
 
           @con.query(sql)
 
@@ -82,7 +82,7 @@ class SQLGenerator
     def retrieveGolfersFromDatabase
 
       begin
-        @con = Mysql.new('localhost', 'dogfight', 'Copperbu$13', 'DOGFIGHT')
+        @con = Mysql.new('localhost', 'dogfight', '****', 'DOGFIGHT')
 
         request = @con.query("SELECT * FROM GOLFER ORDER BY LAST_NAME")
 
@@ -126,7 +126,7 @@ class SQLGenerator
 
 
   # def insertInitialValues -- should not use anymore
-  #   @con = Mysql.new('localhost', 'dogfight', 'Copperbu$13')
+  #   @con = Mysql.new('localhost', 'dogfight', '****')
   #   @golfers.each do |golfer|
   #
   #     queryString = "INSERT INTO GOLFER (FIRST_NAME, LAST_NAME, CURRENT_QUOTA) VALUES (\'#{golfer.firstname}\', \'#{golfer.lastname}\', \'#{golfer.currentQuota}\');"
